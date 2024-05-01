@@ -133,7 +133,7 @@ void setup(void) {
   theCamera.setStillPictureImageFormat(
      CAM_IMGSIZE_QQVGA_H,
      CAM_IMGSIZE_QQVGA_V,
-     CAM_IMAGE_PIX_FMT_JPG);
+     CAM_IMAGE_PIX_FMT_RGB565);
 
   Serial.println("done");
   delay(1000);
@@ -151,19 +151,20 @@ void loop() {
 
   imgTmp.convertPixFormat(CAM_IMAGE_PIX_FMT_RGB565);
 
-  //tft.fillScreen(ST77XX_BLACK);
-  tft.drawRGBBitmap(0, 0, (uint16_t *)imgTmp.getImgBuff(), CAM_IMGSIZE_QQVGA_H, CAM_IMGSIZE_QQVGA_V);
+  tft.setRotation(3);
+  tft.fillScreen(ST77XX_BLACK);
+  tft.drawRGBBitmap(0, 0, (uint16_t *)img.getImgBuff(), CAM_IMGSIZE_QQVGA_H, CAM_IMGSIZE_QQVGA_V);
 
-  snapshot_buf = (uint8_t*)malloc(EI_CAMERA_RAW_FRAME_BUFFER_COLS * EI_CAMERA_RAW_FRAME_BUFFER_ROWS * EI_CAMERA_RAW_FRAME_BYTE_SIZE);
-  if(snapshot_buf == nullptr) {
-    ei_printf("ERR: Failed to allocate snapshot buffer!\n");
-    return;
-  }
+  // snapshot_buf = (uint8_t*)malloc(EI_CAMERA_RAW_FRAME_BUFFER_COLS * EI_CAMERA_RAW_FRAME_BUFFER_ROWS * EI_CAMERA_RAW_FRAME_BYTE_SIZE);
+  // if(snapshot_buf == nullptr) {
+  //   ei_printf("ERR: Failed to allocate snapshot buffer!\n");
+  //   return;
+  // }
 
-  //bool converted = fmt2rgb888(img.getImgBuff(), img.getImgBuffSize(), PIXFORMAT_JPEG, snapshot_buf);
+  // //bool converted = fmt2rgb888(img.getImgBuff(), img.getImgBuffSize(), PIXFORMAT_JPEG, snapshot_buf);
 
 
-  free(snapshot_buf);
+  // free(snapshot_buf);
 
   Serial.println(F("Displayed picture..."));
 }
