@@ -151,8 +151,6 @@ void loop() {
 
   imgTmp.convertPixFormat(CAM_IMAGE_PIX_FMT_RGB565);
 
-  tft.setRotation(3);
-  tft.fillScreen(ST77XX_BLACK);
   tft.drawRGBBitmap(0, 0, (uint16_t *)img.getImgBuff(), CAM_IMGSIZE_QQVGA_H, CAM_IMGSIZE_QQVGA_V);
 
   // snapshot_buf = (uint8_t*)malloc(EI_CAMERA_RAW_FRAME_BUFFER_COLS * EI_CAMERA_RAW_FRAME_BUFFER_ROWS * EI_CAMERA_RAW_FRAME_BYTE_SIZE);
