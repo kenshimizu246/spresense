@@ -12,7 +12,7 @@
 
 #define EI_CAMERA_RAW_FRAME_BUFFER_COLS           CAM_IMGSIZE_QQVGA_H
 #define EI_CAMERA_RAW_FRAME_BUFFER_ROWS           CAM_IMGSIZE_QQVGA_V
-#define EI_CAMERA_RAW_FRAME_BYTE_SIZE             2
+#define EI_CAMERA_RAW_FRAME_BYTE_SIZE             3
 
 #define TFT_CS        24
 #define TFT_RST       18 //27 // Or set to -1 and connect to Arduino RESET pin
@@ -59,14 +59,14 @@ static int ei_camera_get_data(size_t offset, size_t length, float *out_ptr)
     size_t pixels_left = length;
     size_t out_ptr_ix = 0;
 
-//     while (pixels_left != 0) {
-//         out_ptr[out_ptr_ix] = (snapshot_buf[pixel_ix] << 16) + (snapshot_buf[pixel_ix + 1] << 8) + snapshot_buf[pixel_ix + 2];
+    while (pixels_left != 0) {
+        out_ptr[out_ptr_ix] = (snapshot_buf[pixel_ix] << 16) + (snapshot_buf[pixel_ix + 1] << 8) + snapshot_buf[pixel_ix + 2];
 
-//         // go to the next pixel
-//         out_ptr_ix++;
-//         pixel_ix+=3;
-//         pixels_left--;
-//     }
+        // go to the next pixel
+        out_ptr_ix++;
+        pixel_ix+=3;
+        pixels_left--;
+    }
     // and done!
     return 0;
 }
@@ -76,35 +76,38 @@ void inferencing(){
   signal.total_length = EI_CLASSIFIER_INPUT_WIDTH * EI_CLASSIFIER_INPUT_HEIGHT;
   signal.get_data = &ei_camera_get_data;
 
-//   ei_impulse_result_t result = { 0 };
+  ei_impulse_result_t result = { 0 };
 
-//   EI_IMPULSE_ERROR err = run_classifier(&signal, &result, debug_nn);
-//   if (err != EI_IMPULSE_OK) {
-//       ei_printf("ERR: Failed to run classifier (%d)\n", err);
-//       return;
-//   }
+  EI_IMPULSE_ERROR err = run_classifier(&signal, &result, debug_nn);
+  if (err != EI_IMPULSE_OK) {
+      ei_printf("ERR: Failed to run classifier (%d)\n", err);
+      return;
+  }
   
-//   ei_printf("Predictions (DSP: %d ms., Classification: %d ms., Anomaly: %d ms.): \n",
-//             result.timing.dsp, result.timing.classification, result.timing.anomaly);
+  ei_printf("Predictions (DSP: %d ms., Classification: %d ms., Anomaly: %d ms.): \n",
+            result.timing.dsp, result.timing.classification, result.timing.anomaly);
 
-//   uint8_t tline = 0;
-//   bool bb_found = result.bounding_boxes[0].value > 0;
-//   for (size_t ix = 0; ix < result.bounding_boxes_count; ix++) {
-//       auto bb = result.bounding_boxes[ix];
-//       if (bb.value == 0) {
-//           continue;
-//       }
-//       ei_printf("    %s (%f) [ x: %u, y: %u, width: %u, height: %u ]\n", bb.label, bb.value, bb.x, bb.y, bb.width, bb.height);
-//       char text[24];
-//       sprintf(text, "%s %.02f", bb.label, bb.value);
-//       tft.setCursor(96,tline);
-//       tft.print(text);
-//       tft.drawCircle(bb.x, bb.y, 5, ST77XX_YELLOW);
-//       tline += 10;
-//   }
-//   if (!bb_found) {
-//       ei_printf("    No objects found\n");
-//   }
+
+  uint8_t tline = 0;
+  bool bb_found = result.bounding_boxes[0].value > 0;
+  for (size_t ix = 0; ix < result.bounding_boxes_count; ix++) {
+      auto bb = result.bounding_boxes[ix];
+      if (bb.value == 0) {
+          continue;
+      }
+      ei_printf("    %s (%f) [ x: %u, y: %u, width: %u, height: %u ]\n", bb.label, bb.value, bb.x, bb.y, bb.width, bb.height);
+      char text[24];
+      sprintf(text, "%s %.02f", bb.label, bb.value);
+      tft.setCursor(96,tline);
+      tft.print(text);
+      tft.drawCircle(bb.x, bb.y, 5, ST77XX_YELLOW);
+      tline += 10;
+  }
+  if (!bb_found) {
+      ei_printf("    No objects found\n");
+  }
+
+
 
   Serial.println("Photo saved to file");
 }
@@ -113,7 +116,7 @@ void setup(void) {
   Serial.begin(115200);
 
   tft.initR(INITR_BLACKTAB);      // Init ST7735S chip, black tab
-  tft.setRotation(1);
+  tft.setRotation(2);
 
   Serial.println(F("Initialized"));
 ;
@@ -146,23 +149,37 @@ void loop() {
   CamImage img = theCamera.takePicture();
   Serial.println(F("Took picture..."));
 
-  CamImage imgTmp(img);
-  CamErr e;
-
-  imgTmp.convertPixFormat(CAM_IMAGE_PIX_FMT_RGB565);
-
   tft.drawRGBBitmap(0, 0, (uint16_t *)img.getImgBuff(), CAM_IMGSIZE_QQVGA_H, CAM_IMGSIZE_QQVGA_V);
 
-  // snapshot_buf = (uint8_t*)malloc(EI_CAMERA_RAW_FRAME_BUFFER_COLS * EI_CAMERA_RAW_FRAME_BUFFER_ROWS * EI_CAMERA_RAW_FRAME_BYTE_SIZE);
-  // if(snapshot_buf == nullptr) {
-  //   ei_printf("ERR: Failed to allocate snapshot buffer!\n");
-  //   return;
-  // }
+  snapshot_buf = (uint8_t*)malloc(EI_CAMERA_RAW_FRAME_BUFFER_COLS * EI_CAMERA_RAW_FRAME_BUFFER_ROWS * EI_CAMERA_RAW_FRAME_BYTE_SIZE);
+  if(snapshot_buf == nullptr) {
+    ei_printf("ERR: Failed to allocate snapshot buffer!\n");
+    return;
+  }
 
-  // //bool converted = fmt2rgb888(img.getImgBuff(), img.getImgBuffSize(), PIXFORMAT_JPEG, snapshot_buf);
+  //bool converted = fmt2rgb888(img.getImgBuff(), img.getImgBuffSize(), PIXFORMAT_JGB, snapshot_buf);
+  uint16_t * src = (uint16_t *)img.getImgBuff();
+  uint16_t size = CAM_IMGSIZE_QQVGA_H * CAM_IMGSIZE_QQVGA_V;
+  for(uint16_t i = 0; i < size; i++){
+    uint16_t c = src[i];
+    uint8_t r = (uint8_t)(((c & 0xF800) >> 11) << 3);
+    uint8_t g = (uint8_t)(((c & 0x7E0) >> 5) << 2);
+    uint8_t b = (uint8_t)(((c & 0x1F)) << 3);
+    uint16_t p = i * 3;
+    snapshot_buf[p] = r;
+    snapshot_buf[p + 1] = g;
+    snapshot_buf[p + 2] = b;
+  }
 
+  ei::image::processing::crop_and_interpolate_rgb888(
+        snapshot_buf,
+        CAM_IMGSIZE_QQVGA_V,
+        CAM_IMGSIZE_QQVGA_H,
+        snapshot_buf,
+        EI_CLASSIFIER_INPUT_WIDTH,
+        EI_CLASSIFIER_INPUT_HEIGHT);
 
-  // free(snapshot_buf);
+  free(snapshot_buf);
 
   Serial.println(F("Displayed picture..."));
 }
