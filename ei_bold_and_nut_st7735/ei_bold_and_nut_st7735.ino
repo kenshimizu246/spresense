@@ -116,7 +116,7 @@ void setup(void) {
   Serial.begin(115200);
 
   tft.initR(INITR_BLACKTAB);      // Init ST7735S chip, black tab
-  tft.setRotation(2);
+  tft.setRotation(1);
 
   Serial.println(F("Initialized"));
 ;
@@ -129,7 +129,6 @@ void setup(void) {
 
   // large block of text
   tft.fillScreen(ST77XX_BLACK);
-  //testdrawtext("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur adipiscing ante sed nibh tincidunt feugiat. Maecenas enim massa, fringilla sed malesuada et, malesuada sit amet turpis. Sed porttitor neque ut ante pretium vitae malesuada nunc bibendum. Nullam aliquet ultrices massa eu hendrerit. Ut sed nisi lorem. In vestibulum purus a tortor imperdiet posuere. ", ST77XX_WHITE);
   delay(1000);
 
   theCamera.begin();
@@ -178,6 +177,9 @@ void loop() {
         snapshot_buf,
         EI_CLASSIFIER_INPUT_WIDTH,
         EI_CLASSIFIER_INPUT_HEIGHT);
+
+  inferencing();
+  Serial.println("inferencing()");
 
   free(snapshot_buf);
 
