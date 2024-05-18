@@ -118,6 +118,9 @@ void setup()
 */
 void loop()
 {
+    char text[24];
+    uint8_t tline = 2;  // 2 is space between first line and the edge of display.
+
     ei_printf("\nStarting inferencing in 2 seconds...\n");
 
     if (ei_sleep(2000) != EI_IMPULSE_OK) {
@@ -153,8 +156,23 @@ void loop()
     // print the predictions
     ei_printf("Predictions (DSP: %d ms., Classification: %d ms., Anomaly: %d ms.): \n",
                 result.timing.dsp, result.timing.classification, result.timing.anomaly);
+
+    sprintf(text, "DSP: %d", result.timing.dsp);
+    tft.setCursor(96,tline);
+    tft.print(text);
+    tline += 10;
+
+    sprintf(text, "CLS: %d", result.timing.classification);
+    tft.setCursor(96,tline);
+    tft.print(text);
+    tline += 10;
+
+    sprintf(text, "ANM: %d", result.timing.anomaly);
+    tft.setCursor(96,tline);
+    tft.print(text);
+    tline += 15;
+
 #if EI_CLASSIFIER_OBJECT_DETECTION == 1
-    uint8_t tline = 2;  // 2 is space between first line and the edge of display.
     bool bb_found = result.bounding_boxes[0].value > 0;
     for (size_t ix = 0; ix < result.bounding_boxes_count; ix++) {
         auto bb = result.bounding_boxes[ix];
@@ -166,7 +184,6 @@ void loop()
         ei_printf_float(bb.value);
         ei_printf(") [ x: %u, y: %u, width: %u, height: %u ]\n", bb.x, bb.y, bb.width, bb.height);
 
-        char text[24];
         sprintf(text, "%s %.02f", bb.label, bb.value);
         tft.setCursor(96,tline);
         tft.print(text);
